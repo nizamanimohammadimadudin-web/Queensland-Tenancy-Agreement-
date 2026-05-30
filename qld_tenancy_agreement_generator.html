@@ -1,0 +1,359 @@
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-sans); }
+  .app { max-width: 860px; margin: 0 auto; padding: 1.5rem 1rem; }
+
+  .app-header { text-align: center; padding: 2rem 0 2.5rem; }
+  .app-header .badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; padding: 4px 12px; border-radius: 20px; background: #E1F5EE; color: #0F6E56; margin-bottom: 1rem; }
+  .app-header h1 { font-size: 26px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 8px; }
+  .app-header p { font-size: 15px; color: var(--color-text-secondary); }
+
+  .progress-bar { display: flex; align-items: center; gap: 0; margin-bottom: 2rem; }
+  .step-dot { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; position: relative; }
+  .step-dot::after { content: ''; position: absolute; top: 14px; left: 50%; width: 100%; height: 1px; background: var(--color-border-tertiary); z-index: 0; }
+  .step-dot:last-child::after { display: none; }
+  .dot { width: 28px; height: 28px; border-radius: 50%; border: 1.5px solid var(--color-border-secondary); background: var(--color-background-primary); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500; color: var(--color-text-secondary); position: relative; z-index: 1; }
+  .dot.active { background: #1D9E75; border-color: #1D9E75; color: #fff; }
+  .dot.done { background: #E1F5EE; border-color: #0F6E56; color: #0F6E56; }
+  .step-label { font-size: 11px; color: var(--color-text-tertiary); text-align: center; }
+  .step-label.active { color: #0F6E56; font-weight: 500; }
+
+  .section-card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1.5rem; margin-bottom: 1rem; }
+  .section-title { font-size: 15px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 8px; }
+  .section-title i { font-size: 18px; color: #1D9E75; }
+
+  .field-grid { display: grid; gap: 12px; }
+  .field-grid.two { grid-template-columns: 1fr 1fr; }
+  .field-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+  @media (max-width: 600px) { .field-grid.two, .field-grid.three { grid-template-columns: 1fr; } }
+
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field label { font-size: 12px; color: var(--color-text-secondary); font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
+  .field input, .field select, .field textarea { font-size: 14px; padding: 8px 10px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); background: var(--color-background-secondary); color: var(--color-text-primary); outline: none; font-family: var(--font-sans); }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: #1D9E75; box-shadow: 0 0 0 2px rgba(29,158,117,0.15); }
+  .field textarea { resize: vertical; min-height: 72px; }
+
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 0.5px solid var(--color-border-tertiary); }
+  .toggle-row:last-child { border-bottom: none; }
+  .toggle-label { font-size: 14px; color: var(--color-text-primary); }
+  .toggle-sub { font-size: 12px; color: var(--color-text-secondary); margin-top: 2px; }
+  .toggle { position: relative; width: 36px; height: 20px; flex-shrink: 0; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .slider-t { position: absolute; inset: 0; background: var(--color-border-secondary); border-radius: 20px; cursor: pointer; transition: .2s; }
+  .slider-t::before { content: ''; position: absolute; width: 14px; height: 14px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: .2s; }
+  .toggle input:checked + .slider-t { background: #1D9E75; }
+  .toggle input:checked + .slider-t::before { transform: translateX(16px); }
+
+  .nav-row { display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; }
+  .btn { padding: 9px 20px; border-radius: var(--border-radius-md); font-size: 14px; font-weight: 500; cursor: pointer; border: none; font-family: var(--font-sans); transition: opacity .15s; }
+  .btn:hover { opacity: 0.85; }
+  .btn-outline { background: transparent; border: 0.5px solid var(--color-border-secondary); color: var(--color-text-primary); }
+  .btn-primary { background: #1D9E75; color: #fff; }
+  .btn-generate { background: #0F6E56; color: #fff; padding: 12px 28px; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+  .btn-download { background: #185FA5; color: #fff; display: flex; align-items: center; gap: 8px; }
+
+  .output-area { display: none; }
+  .output-area.visible { display: block; }
+  .ai-loading { display: flex; align-items: center; gap: 12px; padding: 2rem; color: var(--color-text-secondary); font-size: 14px; }
+  .spinner { width: 20px; height: 20px; border: 2px solid var(--color-border-secondary); border-top-color: #1D9E75; border-radius: 50%; animation: spin .8s linear infinite; flex-shrink: 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .doc-preview { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 2rem; }
+  .doc-preview h2 { font-size: 18px; font-weight: 500; text-align: center; margin-bottom: 6px; }
+  .doc-preview .doc-sub { text-align: center; font-size: 13px; color: var(--color-text-secondary); margin-bottom: 1.5rem; }
+  .doc-section { margin-bottom: 1.25rem; }
+  .doc-section h3 { font-size: 13px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: #0F6E56; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid #E1F5EE; }
+  .doc-section p { font-size: 13.5px; color: var(--color-text-primary); line-height: 1.75; }
+  .clause-num { color: var(--color-text-secondary); margin-right: 6px; }
+
+  .success-banner { background: #E1F5EE; border: 0.5px solid #5DCAA5; border-radius: var(--border-radius-md); padding: 12px 16px; display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; font-size: 14px; color: #085041; }
+  .success-banner i { font-size: 18px; color: #1D9E75; }
+
+  .disclaimer { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 10px 14px; font-size: 12px; color: var(--color-text-secondary); margin-top: 1rem; line-height: 1.6; }
+
+  .step-page { display: none; }
+  .step-page.active { display: block; }
+</style>
+
+<div class="app">
+  <h2 class="sr-only">Queensland Residential Tenancy Agreement Generator — AI-powered, compliant with the Residential Tenancies and Rooming Accommodation Act 2008.</h2>
+
+  <div class="app-header">
+    <div class="badge"><i class="ti ti-shield-check" aria-hidden="true"></i> QLD Compliant · RTRA Act 2008</div>
+    <h1>Tenancy Agreement Generator</h1>
+    <p>Queensland residential tenancy agreements — generated by AI in seconds</p>
+  </div>
+
+  <div class="progress-bar">
+    <div class="step-dot"><div class="dot active" id="dot-1">1</div><div class="step-label active" id="lbl-1">Property</div></div>
+    <div class="step-dot"><div class="dot" id="dot-2">2</div><div class="step-label" id="lbl-2">Parties</div></div>
+    <div class="step-dot"><div class="dot" id="dot-3">3</div><div class="step-label" id="lbl-3">Lease terms</div></div>
+    <div class="step-dot"><div class="dot" id="dot-4">4</div><div class="step-label" id="lbl-4">Inclusions</div></div>
+    <div class="step-dot"><div class="dot" id="dot-5">5</div><div class="step-label" id="lbl-5">Agreement</div></div>
+  </div>
+
+  <div id="step-1" class="step-page active">
+    <div class="section-card">
+      <div class="section-title"><i class="ti ti-building" aria-hidden="true"></i> Rental property details</div>
+      <div class="field-grid">
+        <div class="field"><label>Street address</label><input type="text" id="prop_address" placeholder="e.g. 42 Coral Street" /></div>
+        <div class="field-grid two">
+          <div class="field"><label>Suburb</label><input type="text" id="prop_suburb" placeholder="e.g. Fortitude Valley" /></div>
+          <div class="field"><label>Postcode</label><input type="text" id="prop_postcode" placeholder="e.g. 4006" /></div>
+        </div>
+        <div class="field"><label>Property type</label>
+          <select id="prop_type">
+            <option value="house">House</option>
+            <option value="unit">Unit / Apartment</option>
+            <option value="townhouse">Townhouse</option>
+            <option value="duplex">Duplex</option>
+            <option value="granny flat">Granny flat</option>
+          </select>
+        </div>
+        <div class="field-grid three">
+          <div class="field"><label>Bedrooms</label><input type="number" id="prop_beds" placeholder="3" min="0" max="20"/></div>
+          <div class="field"><label>Bathrooms</label><input type="number" id="prop_baths" placeholder="1" min="0" max="10"/></div>
+          <div class="field"><label>Car spaces</label><input type="number" id="prop_cars" placeholder="1" min="0" max="10"/></div>
+        </div>
+      </div>
+    </div>
+    <div class="nav-row"><span></span><button class="btn btn-primary" onclick="goStep(2)">Next <i class="ti ti-arrow-right" aria-hidden="true"></i></button></div>
+  </div>
+
+  <div id="step-2" class="step-page">
+    <div class="section-card">
+      <div class="section-title"><i class="ti ti-user" aria-hidden="true"></i> Landlord / lessor</div>
+      <div class="field-grid">
+        <div class="field-grid two">
+          <div class="field"><label>Full name</label><input type="text" id="ll_name" placeholder="e.g. James Whitfield" /></div>
+          <div class="field"><label>Phone number</label><input type="text" id="ll_phone" placeholder="e.g. 0412 345 678" /></div>
+        </div>
+        <div class="field"><label>Email address</label><input type="email" id="ll_email" placeholder="e.g. james@example.com" /></div>
+        <div class="field"><label>Mailing address (if different from property)</label><input type="text" id="ll_address" placeholder="e.g. PO Box 100, Brisbane QLD 4000" /></div>
+      </div>
+    </div>
+    <div class="section-card" style="margin-top: 1rem;">
+      <div class="section-title"><i class="ti ti-users" aria-hidden="true"></i> Tenant(s) / lessee(s)</div>
+      <div class="field-grid">
+        <div class="field-grid two">
+          <div class="field"><label>Tenant 1 full name</label><input type="text" id="t1_name" placeholder="e.g. Sarah Chen" /></div>
+          <div class="field"><label>Phone number</label><input type="text" id="t1_phone" placeholder="e.g. 0423 456 789" /></div>
+        </div>
+        <div class="field"><label>Email address</label><input type="email" id="t1_email" placeholder="e.g. sarah@example.com" /></div>
+        <div class="field-grid two">
+          <div class="field"><label>Tenant 2 (optional)</label><input type="text" id="t2_name" placeholder="Full name" /></div>
+          <div class="field"><label>Phone number</label><input type="text" id="t2_phone" placeholder="e.g. 0434 567 890" /></div>
+        </div>
+      </div>
+    </div>
+    <div class="nav-row">
+      <button class="btn btn-outline" onclick="goStep(1)"><i class="ti ti-arrow-left" aria-hidden="true"></i> Back</button>
+      <button class="btn btn-primary" onclick="goStep(3)">Next <i class="ti ti-arrow-right" aria-hidden="true"></i></button>
+    </div>
+  </div>
+
+  <div id="step-3" class="step-page">
+    <div class="section-card">
+      <div class="section-title"><i class="ti ti-calendar" aria-hidden="true"></i> Lease terms</div>
+      <div class="field-grid">
+        <div class="field-grid two">
+          <div class="field"><label>Lease start date</label><input type="date" id="lease_start" /></div>
+          <div class="field"><label>Lease type</label>
+            <select id="lease_type" onchange="toggleFixedEnd()">
+              <option value="fixed">Fixed term</option>
+              <option value="periodic">Periodic (month to month)</option>
+            </select>
+          </div>
+        </div>
+        <div id="fixed_end_wrap" class="field"><label>Lease end date</label><input type="date" id="lease_end" /></div>
+        <div class="field-grid two">
+          <div class="field"><label>Weekly rent (AUD)</label><input type="number" id="rent_weekly" placeholder="e.g. 550" min="0"/></div>
+          <div class="field"><label>Rent payment day</label>
+            <select id="rent_day">
+              <option>Monday</option><option>Tuesday</option><option>Wednesday</option><option selected>Friday</option><option>Any day</option>
+            </select>
+          </div>
+        </div>
+        <div class="field"><label>Rent payment method</label>
+          <select id="rent_method">
+            <option>Bank transfer (EFT)</option>
+            <option>Direct debit</option>
+            <option>BPAY</option>
+            <option>Cheque</option>
+          </select>
+        </div>
+        <div class="field-grid two">
+          <div class="field"><label>Bond amount (AUD)</label><input type="number" id="bond_amount" placeholder="e.g. 2200" min="0"/></div>
+          <div class="field"><label>Bond lodgement</label>
+            <select id="bond_lodge">
+              <option>RTA Rental Bond Authority</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="nav-row">
+      <button class="btn btn-outline" onclick="goStep(2)"><i class="ti ti-arrow-left" aria-hidden="true"></i> Back</button>
+      <button class="btn btn-primary" onclick="goStep(4)">Next <i class="ti ti-arrow-right" aria-hidden="true"></i></button>
+    </div>
+  </div>
+
+  <div id="step-4" class="step-page">
+    <div class="section-card">
+      <div class="section-title"><i class="ti ti-checklist" aria-hidden="true"></i> Inclusions & special conditions</div>
+      <div class="toggle-row"><div><div class="toggle-label">Pets allowed</div><div class="toggle-sub">Tenant may keep pets with written approval</div></div><label class="toggle"><input type="checkbox" id="inc_pets"><span class="slider-t"></span></label></div>
+      <div class="toggle-row"><div><div class="toggle-label">Smoking permitted indoors</div><div class="toggle-sub">Tenant may smoke inside the property</div></div><label class="toggle"><input type="checkbox" id="inc_smoke"><span class="slider-t"></span></label></div>
+      <div class="toggle-row"><div><div class="toggle-label">Garden / lawn maintenance by tenant</div><div class="toggle-sub">Tenant responsible for lawns and gardens</div></div><label class="toggle"><input type="checkbox" id="inc_garden" checked><span class="slider-t"></span></label></div>
+      <div class="toggle-row"><div><div class="toggle-label">Pool maintenance by tenant</div><div class="toggle-sub">Tenant responsible for pool cleaning and chemicals</div></div><label class="toggle"><input type="checkbox" id="inc_pool"><span class="slider-t"></span></label></div>
+      <div class="toggle-row"><div><div class="toggle-label">Air conditioning included</div><div class="toggle-sub">A/C unit(s) are provided and maintained by landlord</div></div><label class="toggle"><input type="checkbox" id="inc_ac" checked><span class="slider-t"></span></label></div>
+      <div class="toggle-row"><div><div class="toggle-label">Parking space included</div><div class="toggle-sub">Designated parking as part of tenancy</div></div><label class="toggle"><input type="checkbox" id="inc_park" checked><span class="slider-t"></span></label></div>
+      <div class="toggle-row"><div><div class="toggle-label">NBN / internet included in rent</div><div class="toggle-sub">Landlord covers internet costs</div></div><label class="toggle"><input type="checkbox" id="inc_nbn"><span class="slider-t"></span></label></div>
+    </div>
+    <div class="section-card" style="margin-top:1rem;">
+      <div class="section-title"><i class="ti ti-notes" aria-hidden="true"></i> Special conditions (optional)</div>
+      <div class="field">
+        <label>Additional terms or special conditions</label>
+        <textarea id="special_conditions" placeholder="e.g. Tenant to maintain existing veggie garden. Landlord to replace hot water system within 30 days of commencement."></textarea>
+      </div>
+    </div>
+    <div class="nav-row">
+      <button class="btn btn-outline" onclick="goStep(3)"><i class="ti ti-arrow-left" aria-hidden="true"></i> Back</button>
+      <button class="btn btn-generate" onclick="generateAgreement()"><i class="ti ti-sparkles" aria-hidden="true"></i> Generate agreement</button>
+    </div>
+  </div>
+
+  <div id="step-5" class="step-page">
+    <div id="loading-state" class="ai-loading section-card">
+      <div class="spinner"></div>
+      <span>Generating your Queensland tenancy agreement...</span>
+    </div>
+    <div id="output-state" style="display:none;">
+      <div class="success-banner"><i class="ti ti-circle-check" aria-hidden="true"></i> Your agreement is ready — review below, then download.</div>
+      <div class="doc-preview" id="doc-preview"></div>
+      <div class="disclaimer"><strong>Important:</strong> This agreement is AI-generated and intended as a starting point only. It references the <em>Residential Tenancies and Rooming Accommodation Act 2008 (Qld)</em>. Always have a qualified solicitor review before signing. For the RTA Form 1a (General Tenancy Agreement), visit <a href="https://www.rta.qld.gov.au" target="_blank">rta.qld.gov.au</a>.</div>
+      <div class="nav-row" style="margin-top:1rem;">
+        <button class="btn btn-outline" onclick="goStep(4)"><i class="ti ti-arrow-left" aria-hidden="true"></i> Edit details</button>
+        <button class="btn btn-download btn-primary" onclick="downloadAgreement()"><i class="ti ti-download" aria-hidden="true"></i> Download as PDF</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentStep = 1;
+let generatedText = '';
+
+function goStep(n) {
+  document.getElementById('step-' + currentStep).classList.remove('active');
+  document.getElementById('step-' + n).classList.add('active');
+  for (let i = 1; i <= 5; i++) {
+    const dot = document.getElementById('dot-' + i);
+    const lbl = document.getElementById('lbl-' + i);
+    dot.className = 'dot' + (i < n ? ' done' : i === n ? ' active' : '');
+    dot.innerHTML = i < n ? '<i class="ti ti-check" style="font-size:12px"></i>' : i;
+    lbl.className = 'step-label' + (i === n ? ' active' : '');
+  }
+  currentStep = n;
+}
+
+function toggleFixedEnd() {
+  document.getElementById('fixed_end_wrap').style.display =
+    document.getElementById('lease_type').value === 'fixed' ? 'flex' : 'none';
+}
+
+function gv(id) { return (document.getElementById(id) || {}).value || ''; }
+function gc(id) { return document.getElementById(id) && document.getElementById(id).checked; }
+
+function fmtDate(d) {
+  if (!d) return '';
+  const [y,m,day] = d.split('-');
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  return `${parseInt(day)} ${months[parseInt(m)-1]} ${y}`;
+}
+
+async function generateAgreement() {
+  goStep(5);
+  document.getElementById('loading-state').style.display = 'flex';
+  document.getElementById('output-state').style.display = 'none';
+
+  const data = {
+    address: gv('prop_address') + ', ' + gv('prop_suburb') + ' QLD ' + gv('prop_postcode'),
+    type: gv('prop_type'),
+    beds: gv('prop_beds'), baths: gv('prop_baths'), cars: gv('prop_cars'),
+    landlord: gv('ll_name'), ll_phone: gv('ll_phone'), ll_email: gv('ll_email'), ll_addr: gv('ll_address'),
+    tenant1: gv('t1_name'), t1_phone: gv('t1_phone'), t1_email: gv('t1_email'),
+    tenant2: gv('t2_name'), t2_phone: gv('t2_phone'),
+    start: fmtDate(gv('lease_start')), end: fmtDate(gv('lease_end')),
+    leaseType: gv('lease_type'), rent: gv('rent_weekly'), rentDay: gv('rent_day'),
+    rentMethod: gv('rent_method'), bond: gv('bond_amount'),
+    pets: gc('inc_pets'), smoke: gc('inc_smoke'), garden: gc('inc_garden'),
+    pool: gc('inc_pool'), ac: gc('inc_ac'), park: gc('inc_park'), nbn: gc('inc_nbn'),
+    special: gv('special_conditions')
+  };
+
+  const prompt = `You are a Queensland property solicitor drafting a residential tenancy agreement. Generate a professional, legally precise tenancy agreement under the Residential Tenancies and Rooming Accommodation Act 2008 (Qld) using the following details:
+
+PROPERTY: ${data.address} — ${data.type}, ${data.beds} bed, ${data.baths} bath, ${data.cars} car spaces
+LANDLORD: ${data.landlord}, Ph: ${data.ll_phone}, Email: ${data.ll_email}, Postal: ${data.ll_addr}
+TENANT(S): ${data.tenant1} (Ph: ${data.t1_phone}, Email: ${data.t1_email})${data.tenant2 ? ', ' + data.tenant2 + ' (Ph: ' + data.t2_phone + ')' : ''}
+LEASE: ${data.leaseType === 'fixed' ? 'Fixed term from ' + data.start + ' to ' + data.end : 'Periodic tenancy commencing ' + data.start}
+RENT: $${data.rent}/week payable every ${data.rentDay} by ${data.rentMethod}
+BOND: $${data.bond} to be lodged with RTA
+INCLUSIONS: Pets ${data.pets ? 'ALLOWED (with written approval)' : 'NOT allowed'} | Smoking indoors ${data.smoke ? 'PERMITTED' : 'NOT permitted'} | Garden maintenance by ${data.garden ? 'TENANT' : 'LANDLORD'} | Pool by ${data.pool ? 'TENANT' : 'LANDLORD (or N/A)'} | A/C ${data.ac ? 'INCLUDED' : 'not included'} | Parking ${data.park ? 'INCLUDED' : 'not included'} | Internet ${data.nbn ? 'INCLUDED in rent' : 'NOT included'}
+SPECIAL CONDITIONS: ${data.special || 'None'}
+
+Output a complete tenancy agreement with numbered sections covering: Parties, Property, Term, Rent & Bond, Tenant Obligations, Landlord Obligations, Entry Rights, Repairs & Maintenance, Termination, Dispute Resolution, and Special Conditions. Use proper Australian legal language. Be thorough but clear. Format with section headings and numbered clauses.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const json = await res.json();
+    generatedText = json.content?.map(b => b.text || '').join('\n') || '';
+    renderPreview(generatedText, data);
+  } catch(e) {
+    generatedText = buildFallback(data);
+    renderPreview(generatedText, data);
+  }
+
+  document.getElementById('loading-state').style.display = 'none';
+  document.getElementById('output-state').style.display = 'block';
+}
+
+function buildFallback(d) {
+  return `QUEENSLAND RESIDENTIAL TENANCY AGREEMENT\nResidential Tenancies and Rooming Accommodation Act 2008 (Qld)\n\n1. PARTIES\n1.1 Lessor (Landlord): ${d.landlord}\n1.2 Lessee (Tenant): ${d.tenant1}${d.tenant2 ? ', ' + d.tenant2 : ''}\n\n2. PREMISES\n2.1 Address: ${d.address}\n2.2 Type: ${d.type} — ${d.beds} bedrooms, ${d.baths} bathrooms, ${d.cars} car spaces\n\n3. TERM\n3.1 Commencement: ${d.start}\n3.2 Lease type: ${d.leaseType === 'fixed' ? 'Fixed term ending ' + d.end : 'Periodic tenancy'}\n\n4. RENT AND BOND\n4.1 Rent: $${d.rent} per week\n4.2 Payment day: ${d.rentDay}\n4.3 Payment method: ${d.rentMethod}\n4.4 Bond: $${d.bond} to be lodged with the Residential Tenancies Authority\n\n5. INCLUSIONS\n5.1 Pets: ${d.pets ? 'Permitted with prior written approval from Lessor' : 'Not permitted'}\n5.2 Smoking: ${d.smoke ? 'Permitted indoors' : 'Not permitted inside the premises'}\n5.3 Garden maintenance: ${d.garden ? 'Lessee responsibility' : 'Lessor responsibility'}\n5.4 Pool maintenance: ${d.pool ? 'Lessee responsibility' : 'Lessor responsibility or N/A'}\n5.5 Air conditioning: ${d.ac ? 'Provided and maintained by Lessor' : 'Not included'}\n5.6 Parking: ${d.park ? 'One designated space included' : 'Not included'}\n5.7 Internet: ${d.nbn ? 'Included in weekly rent' : 'Tenant\'s responsibility'}\n\n6. SPECIAL CONDITIONS\n${d.special || 'Nil'}\n\n7. SIGNATURES\n_________________________\nLessor signature & date\n\n_________________________\nTenant signature & date`;
+}
+
+function renderPreview(text, data) {
+  const sections = text.split(/\n(?=\d+\.\s+[A-Z])/);
+  let html = `<h2>Queensland Residential Tenancy Agreement</h2><div class="doc-sub">Residential Tenancies and Rooming Accommodation Act 2008 (Qld) · ${data.address}</div>`;
+  sections.forEach(s => {
+    const lines = s.trim().split('\n');
+    if (!lines.length) return;
+    const heading = lines[0].replace(/^\d+\.\s+/, '');
+    const body = lines.slice(1).join('\n').trim();
+    html += `<div class="doc-section"><h3>${heading}</h3>`;
+    body.split('\n').filter(l => l.trim()).forEach(line => {
+      const clean = line.trim();
+      html += `<p>${clean}</p>`;
+    });
+    html += '</div>';
+  });
+  document.getElementById('doc-preview').innerHTML = html;
+}
+
+function downloadAgreement() {
+  const blob = new Blob([generatedText], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'QLD_Tenancy_Agreement.txt';
+  a.click();
+}
+</script>
